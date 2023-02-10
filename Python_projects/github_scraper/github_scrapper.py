@@ -3,28 +3,26 @@ from bs4 import BeautifulSoup
 import html5lib
 import re
 import csv
-from .constants import *
+from .constants import BASE_URL, GITHUB_URL, REPO_LINKS_CLASSES, PROFILE_CLASSES
 
 
 #This function fetches all the github profile links from the search result page and returns list containing the links 
 def get_profile_links(search_query, no_of_results):
-    base_url = BASE_URL
-    github_url = GITHUB_URL
     links = []
-
     total_pages = int(no_of_results/10) + 1
 
     page = 1
+
     while page <= total_pages:
-        req = requests.get(base_url + "p=" + str(page) + "&q=" + str(search_query))
+        req = requests.get(BASE_URL + "p=" + str(page) + "&q=" + str(search_query))
         soup=BeautifulSoup(req.content,'html5lib')
 
         repo_links_ul = soup.find("ul", class_=REPO_LINKS_CLASSES['ul'])
         repo_links = repo_links_ul.find_all('a', class_=REPO_LINKS_CLASSES['a'])
-        for i in repo_links:
-            print("/".join(i['href'].split("/")[:2]))
-            suffix_url = "/".join(i['href'].split("/")[:2])
-            links.append(github_url+suffix_url)
+        for link_obj in repo_links:
+            print("/".join(link_obj['href'].split("/")[:2]))
+            suffix_url = "/".join(link_obj['href'].split("/")[:2])
+            links.append(GITHUB_URL+suffix_url)
         page += 1    
 
     return links[:no_of_results]   
@@ -35,13 +33,14 @@ def write_to_csv(profiles_list):
     with open("github_profiles.csv", 'w') as file:
         fieldnames = ['name', 'username', 'bio', 'followers', 'following', 'profile_pic', 'num_of_repos']
         writer = csv.writer(file)
-        writer.writerow(fieldnames)
+        profiles_list.insert(0, fieldnames)
         writer.writerows(profiles_list)
 
 
 #This function fetches the info of users from the profile page
 def get_profile_info(profile_link_list):    
     profiles_list = []
+
     for profile_link in profile_link_list:
         req = requests.get(profile_link)
         soup = BeautifulSoup(req.content,'html5lib')
